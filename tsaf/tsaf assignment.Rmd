@@ -4,3 +4,90 @@ output:
   pdf_document: default
   html_notebook: default
 ---
+
+Clear all variables in workspace and install packages
+
+```{r}
+rm(list=ls())
+
+#install.packages('quantmod')
+#install.packages('TTR')
+
+#suppress `getSymbols` message
+options("getSymbols.warning4.0"=FALSE)
+
+```
+
+## Load the forecasting package
+
+```{r warning=FALSE, echo=FALSE}
+library(fpp2)
+library('TTR')
+library('quantmod')
+library(ggplot2)
+
+```
+
+## Load Dataset
+
+Data is collected from Yahoo Finance using the Quantitative Financial Modeling Framework (Quantmod). Data obtained in eXtensible-Time-Series format is being used for data exploration.
+
+```{r  }
+#Download data from yahoo finance
+df_tsm <- getSymbols('TSM',src='yahoo',auto.assign=FALSE,from="2011-01-01")
+
+#Check the contents of the data
+class(df_tsm)
+
+#List the number of rows in the data
+nrow(df_tsm)
+
+#Print the last 6 rows of the data
+tail(df_tsm)
+
+
+```
+
+## Time plot of the data
+
+```{r }
+tsm_title = "Taiwan Semiconductor Manufacturing Company Limited Stock Price (TSM) (2011-2022)"
+tsm_close = df_tsm$TSM.Adjusted
+#plot(df_tsm$TSM.Close,main = tsm_title)
+chart_Series(tsm_close,name=tsm_title)
+
+```
+From the figure above TSM stock price has a `strong positive trend`.This shows that it is `non-stationary`
+
+```{r}
+
+par(mfrow=c(1,2))
+acf(tsm_close, lag=100)
+pacf(tsm_close ,lag=100)
+
+```
+The trend can be removed by `differensing ` the data to remove the trend
+```{r}
+par(mfrow=c(2,1))
+
+dy = diff(tsm_close,lag = 1)
+chart_Series(dy,name="Time Plot of difference data")
+
+wld = diff(log(tsm_close))
+chart_Series(wld,name="Time Plot of log difference data")
+
+
+
+```
+## Check for residuals
+```{r}
+checkresiduals(tsm_close)
+```
+## Fit arima
+```{r}
+# differencing is set to 1 d=1
+# TRACE prints out all models that have been tried
+fit_arima = auto.arima(tsm_close,d=1,stepwise = FALSE,approximation = FALSE,trace = TRUE)
+print(summary(fit_arima))
+```
+
