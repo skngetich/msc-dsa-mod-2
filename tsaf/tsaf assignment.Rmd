@@ -81,7 +81,7 @@ chart_Series(wld,name="Time Plot of log difference data")
 ```
 ## Check for residuals
 ```{r}
-checkresiduals(tsm_close)
+try(checkresiduals(tsm_close))
 ```
 ## Fit arima
 ```{r}
