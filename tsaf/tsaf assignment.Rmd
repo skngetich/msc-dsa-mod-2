@@ -1,0 +1,6 @@
+---
+title: "Timeseries"
+output:
+  pdf_document: default
+  html_notebook: default
+---
