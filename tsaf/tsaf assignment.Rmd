@@ -1,34 +1,39 @@
 ---
 title: "Timeseries"
 output:
-  pdf_document: default
   html_notebook: default
+  pdf_document: default
 ---
 
-Clear all variables in workspace and install packages
+Clear all variables in work space and install packages
 
-```{r}
+```{r message = FALSE,warning = FALSE}
 rm(list=ls())
 
-#install.packages('quantmod')
-#install.packages('TTR')
+requiredPackages = c('quantmod','TTR','tseries')
+for(p in requiredPackages){
+  if(!require(p,character.only = TRUE)) install.packages(p) #install package if it does not exist
+  library(p,character.only = TRUE)
+}
 
 #suppress `getSymbols` message
 options("getSymbols.warning4.0"=FALSE)
 
 ```
 
-## Load the forecasting package
+## Load the forecasting packages
 
 ```{r warning=FALSE, echo=FALSE}
 library(fpp2)
-library('TTR')
-library('quantmod')
+library(TTR)
+library(quantmod)
 library(ggplot2)
+library(tseries)
 
 ```
 
-## Load Dataset
+## Get to Know Time-Series Data
+### Load Dataset
 
 Data is collected from Yahoo Finance using the Quantitative Financial Modeling Framework (Quantmod). Data obtained in eXtensible-Time-Series format is being used for data exploration.
 
@@ -48,11 +53,40 @@ tail(df_tsm)
 
 ```
 
-## Time plot of the data
+### Stock price visualization
+This show show the patterns of the data.
+
+```{r}
+tsm_title = "Taiwan Semiconductor Manufacturing Company Limited Stock Price (TSM) (2011-2022)"
+
+
+chartSeries(df_tsm , name="TSM price 2011-2022")
+
+```
+TSM has grown upwards from 2011 to 2022 shown by the upward trends
+
+### Time plot of the data
 
 ```{r }
-tsm_title = "Taiwan Semiconductor Manufacturing Company Limited Stock Price (TSM) (2011-2022)"
-tsm_close = df_tsm$TSM.Adjusted
+#returns the closing price
+tsm_close = Cl(to.monthly(df_tsm))
+
+#decompose the data
+dc <- decompose(as.ts(tsm_close, start=c(2011,1)))
+plot(dc)
+
+#Display seasonal stock data
+dc$seasonal
+
+```
+The output shows for plots of TSM closing price which are:  
+- **Observed**: Original plot of the data.   
+- **Trend** : There is an upward trend that is significant from 2018.   
+- **Seasonal** There is repetitive seasonal fluctuation of data.The closing price reached the highest in January and the lowest in June.This shows that a good time to sell is beginning of the year and the risht time to buy is mid year  
+- **Random** irregular or random fluctuation not captured by the trend and seasonal.  
+
+
+```{r}
 #plot(df_tsm$TSM.Close,main = tsm_title)
 chart_Series(tsm_close,name=tsm_title)
 
@@ -66,7 +100,7 @@ acf(tsm_close, lag=100)
 pacf(tsm_close ,lag=100)
 
 ```
-The trend can be removed by `differensing ` the data to remove the trend
+The trend can be removed by `differensing ` the data to removes the trend
 ```{r}
 par(mfrow=c(2,1))
 
@@ -77,17 +111,28 @@ wld = diff(log(tsm_close))
 chart_Series(wld,name="Time Plot of log difference data")
 
 
+```
+## Test Stationarity
+```{r}
+
+adf.test(tsm_close)
 
 ```
-## Check for residuals
-```{r}
-try(checkresiduals(tsm_close))
-```
+The p-value is greater the 0.05 hence we fail to reject null hypothesis
+
 ## Fit arima
 ```{r}
 # differencing is set to 1 d=1
 # TRACE prints out all models that have been tried
-fit_arima = auto.arima(tsm_close,d=1,stepwise = FALSE,approximation = FALSE,trace = TRUE)
+fit_arima = auto.arima(tsm_close,d=1,stepwise = FALSE,approximation = FALSE,trace = FALSE)
 print(summary(fit_arima))
+checkresiduals(fit_arima,plot=TRUE)
 ```
+## Forcast 24 month
+```{r}
 
+fcst =  forecast(fit_arima, level=c(95),h=24)
+autoplot(fcst) +   scale_x_continuous()
+
+#plot.fo
+```
