@@ -1,8 +1,10 @@
 ---
-title: "Timeseries"
+title: "79546 - Timeseries Emphirical Paper"
 output:
-  html_notebook: default
   pdf_document: default
+  html_document:
+    df_print: paged
+  html_notebook: default
 ---
 
 Clear all variables in work space and install packages
@@ -23,7 +25,7 @@ options("getSymbols.warning4.0"=FALSE)
 
 ## Load the forecasting packages
 
-```{r warning=FALSE, echo=FALSE}
+```{r warning=FALSE}
 library(fpp2)
 library(TTR)
 library(quantmod)
@@ -54,7 +56,7 @@ tail(df_tsm)
 ```
 
 ### Stock price visualization
-This show show the patterns of the data.
+This shows the patterns of the data.
 
 ```{r}
 tsm_title = "Taiwan Semiconductor Manufacturing Company Limited Stock Price (TSM) (2011-2022)"
@@ -63,7 +65,7 @@ tsm_title = "Taiwan Semiconductor Manufacturing Company Limited Stock Price (TSM
 chartSeries(df_tsm , name="TSM price 2011-2022")
 
 ```
-TSM has grown upwards from 2011 to 2022 shown by the upward trends
+TSM share price has grown upwards from 2011 to 2022 
 
 ### Time plot of the data
 
@@ -93,13 +95,24 @@ chart_Series(tsm_close,name=tsm_title)
 ```
 From the figure above TSM stock price has a `strong positive trend`.This shows that it is `non-stationary`
 
+### Stationarity Test on the stock price
+
+```{r}
+adf.test(tsm_close)
+```
+The p-value is not less than 0.05 hence we fail to reject null hypothesis.  
+This means that the time series is non-stationary.
+
+### ACF and PACF plots of the time-series data
+
 ```{r}
 
 par(mfrow=c(1,2))
-acf(tsm_close, lag=100)
-pacf(tsm_close ,lag=100)
+acf(tsm_close)
+pacf(tsm_close)
 
 ```
+from the ACF and PACF plot,AR model would be ideal for this stock price  
 The trend can be removed by `differensing ` the data to removes the trend
 ```{r}
 par(mfrow=c(2,1))
@@ -112,27 +125,29 @@ chart_Series(wld,name="Time Plot of log difference data")
 
 
 ```
-## Test Stationarity
-```{r}
 
-adf.test(tsm_close)
+### Stationarity test of Differencing log time-series
+
+```{r}
+adf.test(wld[!is.na(wld)])
 
 ```
-The p-value is greater the 0.05 hence we fail to reject null hypothesis
+The p-value is less than 0.05 hence we accept null hypothesis.  
+This means that the difference time series is stationary.
 
-## Fit arima
+## Find the best fit arima model
+`auto.arima` finds the best fit ARIMA model the forecasting
 ```{r}
 # differencing is set to 1 d=1
-# TRACE prints out all models that have been tried
+# if TRACE = TRUE prints out all models that have been tried
 fit_arima = auto.arima(tsm_close,d=1,stepwise = FALSE,approximation = FALSE,trace = FALSE)
 print(summary(fit_arima))
 checkresiduals(fit_arima,plot=TRUE)
 ```
-## Forcast 24 month
+### Genarate a 24-month forecast using best fit ARIMA model
 ```{r}
 
-fcst =  forecast(fit_arima, level=c(95),h=24)
-autoplot(fcst) +   scale_x_continuous()
+fcst =  forecast(fit_arima, h=24,level=c(95))
+autoplot(fcst)
 
-#plot.fo
 ```
